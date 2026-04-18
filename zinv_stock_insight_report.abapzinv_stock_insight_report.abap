@@ -1,3 +1,9 @@
+*&---------------------------------------------------------------------*
+*& Report ZINV_STOCK_INSIGHT_REPORT
+*&---------------------------------------------------------------------*
+*& Inventory Aging & Stock Insight Dashboard
+*&---------------------------------------------------------------------*
+
 REPORT zinv_stock_insight_report.
 
 *---------------------------------------------------------------------*
@@ -16,31 +22,42 @@ TYPES: BEGIN OF ty_stock,
        END OF ty_stock.
 
 *---------------------------------------------------------------------*
-* Data Declarations
+* Data
 *---------------------------------------------------------------------*
-DATA:
-  gt_stock     TYPE TABLE OF ty_stock,
-  gt_fieldcat  TYPE slis_t_fieldcat_alv,
-  gt_sort      TYPE slis_t_sortinfo_alv,
-  gs_layout    TYPE slis_layout_alv,
-  gt_events    TYPE slis_t_event,
-  gv_repid     TYPE sy-repid.
+DATA: gt_stock     TYPE TABLE OF ty_stock,
+      gt_fieldcat  TYPE slis_t_fieldcat_alv,
+      gt_sort      TYPE slis_t_sortinfo_alv,
+      gs_layout    TYPE slis_layout_alv,
+      gs_variant   TYPE disvariant,
+      gt_events    TYPE slis_t_event,
+      gv_repid     TYPE sy-repid.
 
 *---------------------------------------------------------------------*
 * Selection Screen
 *---------------------------------------------------------------------*
-SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE text-001.
-SELECT-OPTIONS:
-  s_matnr FOR mara-matnr,
-  s_werks FOR mard-werks.
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
+  SELECT-OPTIONS:
+    s_matnr FOR mara-matnr,
+    s_werks FOR mard-werks.
 SELECTION-SCREEN END OF BLOCK b1.
+
+SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE TEXT-002.
+  PARAMETERS: p_var TYPE disvariant-variant.
+SELECTION-SCREEN END OF BLOCK b2.
 
 INITIALIZATION.
   gv_repid = sy-repid.
-  text-001 = 'Inventory Selection'.
+  TEXT-001 = 'Inventory Filters'.
+  TEXT-002 = 'Display Options'.
 
 *---------------------------------------------------------------------*
-* Start-of-Selection
+* F4 Variant Help
+*---------------------------------------------------------------------*
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_var.
+  PERFORM f4_variant.
+
+*---------------------------------------------------------------------*
+* Start
 *---------------------------------------------------------------------*
 START-OF-SELECTION.
   PERFORM fetch_data.
@@ -48,12 +65,15 @@ START-OF-SELECTION.
   PERFORM display_alv.
 
 *---------------------------------------------------------------------*
-* Fetch Data (JOIN)
+* Fetch Data
 *---------------------------------------------------------------------*
 FORM fetch_data.
 
-  SELECT mara~matnr makt~maktx
-         mard~werks mard~lgort mard~labst
+  SELECT mara~matnr
+         makt~maktx
+         mard~werks
+         mard~lgort
+         mard~labst
          mara~ersda
     INTO CORRESPONDING FIELDS OF TABLE gt_stock
     FROM mara
@@ -63,14 +83,16 @@ FORM fetch_data.
     WHERE mara~matnr IN s_matnr
       AND mard~werks IN s_werks.
 
-  IF sy-subrc <> 0.
+  IF sy-subrc = 0.
+    MESSAGE 'Data fetched successfully' TYPE 'I'.
+  ELSE.
     MESSAGE 'No data found' TYPE 'E'.
   ENDIF.
 
 ENDFORM.
 
 *---------------------------------------------------------------------*
-* Process Data (Business Logic)
+* Process Data
 *---------------------------------------------------------------------*
 FORM process_data.
 
@@ -83,94 +105,21 @@ FORM process_data.
     IF <fs>-labst = 0.
       <fs>-category = 'Out of Stock'.
       <fs>-color = 'C610'.
-
     ELSEIF <fs>-days_old > 365.
       <fs>-category = 'Dead Stock'.
       <fs>-color = 'C620'.
-
     ELSEIF <fs>-days_old > 180.
       <fs>-category = 'Slow Moving'.
       <fs>-color = 'C310'.
-
     ELSEIF <fs>-days_old > 60.
       <fs>-category = 'Normal'.
       <fs>-color = 'C510'.
-
     ELSE.
       <fs>-category = 'Fast Moving'.
       <fs>-color = 'C410'.
-
     ENDIF.
 
   ENDLOOP.
-
-ENDFORM.
-
-*---------------------------------------------------------------------*
-* Build Field Catalog
-*---------------------------------------------------------------------*
-FORM build_fieldcat.
-
-  DATA ls TYPE slis_fieldcat_alv.
-  CLEAR gt_fieldcat.
-
-  DEFINE add_field.
-    CLEAR ls.
-    ls-fieldname = &1.
-    ls-seltext_m = &2.
-    ls-col_pos = &3.
-    ls-outputlen = &4.
-    APPEND ls TO gt_fieldcat.
-  END-OF-DEFINITION.
-
-  add_field 'MATNR' 'Material' 1 18.
-  add_field 'MAKTX' 'Description' 2 30.
-  add_field 'WERKS' 'Plant' 3 6.
-  add_field 'LGORT' 'Storage' 4 6.
-  add_field 'LABST' 'Stock' 5 15.
-  add_field 'ERSDA' 'Created On' 6 10.
-  add_field 'DAYS_OLD' 'Days Old' 7 6.
-  add_field 'CATEGORY' 'Category' 8 15.
-
-ENDFORM.
-
-*---------------------------------------------------------------------*
-* Build Layout
-*---------------------------------------------------------------------*
-FORM build_layout.
-
-  gs_layout-zebra = 'X'.
-  gs_layout-colwidth_optimize = 'X'.
-  gs_layout-info_fieldname = 'COLOR'.
-
-ENDFORM.
-
-*---------------------------------------------------------------------*
-* Build Sort
-*---------------------------------------------------------------------*
-FORM build_sort.
-
-  DATA ls_sort TYPE slis_sortinfo_alv.
-
-  CLEAR gt_sort.
-
-  ls_sort-fieldname = 'WERKS'.
-  ls_sort-up = 'X'.
-  ls_sort-subtot = 'X'.
-  APPEND ls_sort TO gt_sort.
-
-ENDFORM.
-
-*---------------------------------------------------------------------*
-* Build Events
-*---------------------------------------------------------------------*
-FORM build_events.
-
-  CALL FUNCTION 'REUSE_ALV_EVENTS_GET'
-    EXPORTING
-      i_list_type = 0
-    IMPORTING
-      et_events = gt_events.
 
 ENDFORM.
 
@@ -186,14 +135,116 @@ FORM display_alv.
 
   CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
     EXPORTING
-      i_callback_program = gv_repid
-      i_callback_top_of_page = 'TOP_OF_PAGE'
-      is_layout = gs_layout
-      it_fieldcat = gt_fieldcat
-      it_sort = gt_sort
-      it_events = gt_events
+      i_callback_program       = gv_repid
+      i_callback_user_command  = 'USER_COMMAND'
+      i_callback_top_of_page   = 'TOP_OF_PAGE'
+      is_layout                = gs_layout
+      it_fieldcat              = gt_fieldcat
+      it_sort                  = gt_sort
+      it_events                = gt_events
+      is_variant               = gs_variant
+      i_save                   = 'A'
     TABLES
-      t_outtab = gt_stock.
+      t_outtab                 = gt_stock.
+
+ENDFORM.
+
+*---------------------------------------------------------------------*
+* Field Catalog
+*---------------------------------------------------------------------*
+FORM build_fieldcat.
+
+  DATA ls TYPE slis_fieldcat_alv.
+  CLEAR gt_fieldcat.
+
+  DEFINE add.
+    CLEAR ls.
+    ls-fieldname = &1.
+    ls-seltext_m = &2.
+    ls-col_pos = &3.
+    ls-outputlen = &4.
+    APPEND ls TO gt_fieldcat.
+  END-OF-DEFINITION.
+
+  add 'MATNR' 'Material' 1 18.
+  add 'MAKTX' 'Description' 2 30.
+  add 'WERKS' 'Plant' 3 6.
+  add 'LGORT' 'Storage' 4 6.
+  add 'LABST' 'Stock' 5 15.
+  add 'ERSDA' 'Created On' 6 10.
+  add 'DAYS_OLD' 'Days Old' 7 6.
+  add 'CATEGORY' 'Category' 8 20.
+
+ENDFORM.
+
+*---------------------------------------------------------------------*
+* Layout
+*---------------------------------------------------------------------*
+FORM build_layout.
+
+  gs_layout-zebra = 'X'.
+  gs_layout-colwidth_optimize = 'X'.
+  gs_layout-info_fieldname = 'COLOR'.
+
+  gs_variant-report = gv_repid.
+  gs_variant-variant = p_var.
+
+ENDFORM.
+
+*---------------------------------------------------------------------*
+* Sort
+*---------------------------------------------------------------------*
+FORM build_sort.
+
+  DATA ls TYPE slis_sortinfo_alv.
+  CLEAR gt_sort.
+
+  ls-fieldname = 'WERKS'.
+  ls-up = 'X'.
+  ls-subtot = 'X'.
+  APPEND ls TO gt_sort.
+
+ENDFORM.
+
+*---------------------------------------------------------------------*
+* Events
+*---------------------------------------------------------------------*
+FORM build_events.
+
+  CALL FUNCTION 'REUSE_ALV_EVENTS_GET'
+    EXPORTING i_list_type = 0
+    IMPORTING et_events = gt_events.
+
+ENDFORM.
+
+*---------------------------------------------------------------------*
+* F4 Variant
+*---------------------------------------------------------------------*
+FORM f4_variant.
+
+  DATA ls TYPE disvariant.
+  ls-report = gv_repid.
+
+  CALL FUNCTION 'REUSE_ALV_VARIANT_F4'
+    EXPORTING is_variant = ls i_save = 'A'
+    IMPORTING es_variant = ls.
+
+  p_var = ls-variant.
+
+ENDFORM.
+
+*---------------------------------------------------------------------*
+* User Command
+*---------------------------------------------------------------------*
+FORM user_command USING r_ucomm LIKE sy-ucomm
+                        rs_selfield TYPE slis_selfield.
+
+  IF r_ucomm = '&IC1'.
+    IF rs_selfield-fieldname = 'MATNR'.
+      SET PARAMETER ID 'MAT' FIELD rs_selfield-value.
+      CALL TRANSACTION 'MM03' AND SKIP FIRST SCREEN.
+    ENDIF.
+  ENDIF.
 
 ENDFORM.
 
@@ -202,37 +253,14 @@ ENDFORM.
 *---------------------------------------------------------------------*
 FORM top_of_page.
 
-  DATA: lt_header TYPE slis_t_listheader,
-        ls_header TYPE slis_listheader.
+  DATA: lt TYPE slis_t_listheader,
+        ls TYPE slis_listheader.
 
-  CLEAR ls_header.
-  ls_header-typ = 'H'.
-  ls_header-info = 'Inventory Aging Dashboard'.
-  APPEND ls_header TO lt_header.
-
-  CLEAR ls_header.
-  ls_header-typ = 'S'.
-  ls_header-key = 'Date:'.
-  WRITE sy-datum TO ls_header-info.
-  APPEND ls_header TO lt_header.
+  ls-typ = 'H'.
+  ls-info = 'Inventory Aging Dashboard'.
+  APPEND ls TO lt.
 
   CALL FUNCTION 'REUSE_ALV_COMMENTARY_WRITE'
-    EXPORTING it_list_commentary = lt_header.
-
-ENDFORM.
-
-*---------------------------------------------------------------------*
-* User Command (Interaction)
-*---------------------------------------------------------------------*
-FORM user_command USING r_ucomm LIKE sy-ucomm
-                        rs_selfield TYPE slis_selfield.
-
-  CASE r_ucomm.
-    WHEN '&IC1'.
-      IF rs_selfield-fieldname = 'MATNR'.
-        SET PARAMETER ID 'MAT' FIELD rs_selfield-value.
-        CALL TRANSACTION 'MM03' AND SKIP FIRST SCREEN.
-      ENDIF.
-  ENDCASE.
+    EXPORTING it_list_commentary = lt.
 
 ENDFORM.
