@@ -157,8 +157,8 @@ sap-abap-inventory-dashboard/
 
 ## 👤 Author Information
 
-* **Name:** Arup Mishra
-* **Roll Number:** 23052229
+* **Name:** Yash Sirola
+* **Roll Number:** 23053179
 * **Batch/Program:** B.Tech
 * **Submission Date:** April 2026
 
