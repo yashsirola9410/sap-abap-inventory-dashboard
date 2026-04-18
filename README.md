@@ -1,74 +1,102 @@
-# SAP ABAP Inventory Aging Dashboard
+# SAP ABAP Custom ALV Report – Inventory Aging & Stock Insight
 
-## 📌 Project Overview
+## Project Overview
 
-This project is an SAP ABAP ALV (ABAP List Viewer) report designed to analyze inventory stock across plants and storage locations. It provides insights into stock aging, movement patterns, and risk classification to support better inventory management decisions.
+This project is a comprehensive SAP ABAP ALV (ABAP List Viewer) report developed to analyze inventory stock across plants and storage locations. It follows industry best practices and demonstrates production-level ABAP design using optimized data retrieval and interactive reporting.
 
-The report demonstrates clean ABAP design, performance optimization using JOIN, and interactive ALV features.
+**Program Name:** ZINV_STOCK_INSIGHT_REPORT
 
 ---
 
-## 🎯 Problem Statement
+## Author Information
 
-Organizations often face challenges in:
+* **Name:** Yash Sirola
+* **Roll Number:** 23053179
+* **Batch/Program:** B.Tech Computer Science Engineering
+* **Submission Date:** April 2026
 
-* Identifying slow-moving or dead stock
+---
+
+## Problem Statement
+
+Organizations often struggle with inventory visibility and control. Key challenges include:
+
+* Identifying slow-moving and dead stock
 * Monitoring stock availability across plants
-* Analyzing inventory aging for decision-making
+* Understanding inventory aging trends
+* Reducing overstock and stockout risks
 
-Traditional reports lack proper visualization and classification, making it difficult to derive actionable insights.
-
----
-
-## 💡 Solution
-
-This project provides:
-
-* Inventory aging analysis
-* Stock classification (Fast Moving, Normal, Slow Moving, Dead Stock)
-* Centralized dashboard using ALV
-* Interactive and readable output
+Traditional reports lack performance efficiency and actionable insights.
 
 ---
 
-## 🚀 Features
+## Solution & Features
 
-### 🔹 Core Functionality
+### Core Functionality
 
-* Inventory data retrieval using optimized JOIN
-* Aging calculation (based on material creation date)
-* Stock classification logic
-* ALV grid display
+* Interactive ALV Grid Display
+* Inventory Aging Analysis
+* Stock Classification based on business logic
+* Multi-dimensional filtering (Material, Plant)
+* Color-coded stock categories
 
-### 🔹 Business Logic
+---
 
-* **Out of Stock** → Stock = 0
+### Business Logic
+
+Stock is categorized as:
+
+* **Out of Stock** → Quantity = 0
 * **Dead Stock** → > 365 days
 * **Slow Moving** → 181–365 days
 * **Normal** → 61–180 days
 * **Fast Moving** → ≤ 60 days
 
-### 🔹 UI & ALV Features
+---
 
-* Zebra pattern for readability
-* Auto column width optimization
-* Color-coded rows based on category
-* Top-of-page header
-* Sorting and grouping
+## Technical Highlights
 
-### 🔹 Interactive Feature
+### 1. Performance Optimization (JOIN Usage)
 
-* Click on material → navigates to transaction `MM03`
+```abap
+SELECT mara~matnr makt~maktx mard~werks ...
+FROM mara
+INNER JOIN mard ON mara~matnr = mard~matnr
+```
+
+**Benefits:**
+
+* Avoids SELECT in LOOP
+* Reduces database calls
+* Improves performance on large datasets
 
 ---
 
-## 🏗️ Technical Architecture
+### 2. ALV Features
+
+* Field catalog for structured output
+* Layout customization (zebra pattern, optimized columns)
+* Sorting and subtotal functionality
+* Top-of-page header display
+* Interactive hotspot navigation
+
+---
+
+### 3. Data Processing Logic
+
+* Calculates inventory aging (days since creation)
+* Applies classification rules
+* Assigns color codes dynamically
+
+---
+
+## Technical Architecture
 
 ### Tables Used
 
-* **MARA** → Material Master
-* **MARD** → Storage Location Data
-* **MAKT** → Material Description
+* **MARA** – Material Master
+* **MARD** – Storage Location Data
+* **MAKT** – Material Description
 
 ### Data Flow
 
@@ -76,26 +104,15 @@ Selection Screen → Data Fetch (JOIN) → Processing → ALV Display
 
 ---
 
-## ⚙️ Technologies Used
+## Technologies Used
 
 * Language: ABAP
-* UI: ALV Grid (REUSE_ALV_GRID_DISPLAY)
-* Platform: SAP NetWeaver / SAP ECC / S4HANA
+* UI Component: ALV Grid (REUSE_ALV_GRID_DISPLAY)
+* Platform: SAP NetWeaver / SAP ECC / S/4HANA
 
 ---
 
-## 📂 Project Structure
-
-```
-sap-abap-inventory-dashboard/
-│
-├── zinv_stock_insight_report.abap
-├── README.md
-```
-
----
-
-## 🛠️ Installation & Execution
+## Installation & Execution
 
 1. Open SAP GUI
 2. Go to Transaction `SE38`
@@ -106,9 +123,28 @@ sap-abap-inventory-dashboard/
 
 ---
 
-## 📊 Expected Output
+## Usage Guide
 
-* ALV table showing:
+### Selection Parameters
+
+* Material (s_matnr) → Filter by material
+* Plant (s_werks) → Filter by plant
+* Layout Variant (p_var) → Save/load layout
+
+---
+
+### Interactive Features
+
+* Click on **Material** → Opens transaction `MM03`
+* Sorting → Click column headers
+* Filtering → Use ALV toolbar
+* Layout Save → Customize display
+
+---
+
+## Expected Output
+
+* ALV Grid displaying:
 
   * Material
   * Plant
@@ -116,56 +152,46 @@ sap-abap-inventory-dashboard/
   * Days Old
   * Category
 
-* Color-coded rows based on stock condition
+* Color-coded rows for better visualization
 
 ---
 
-## 📈 Performance Considerations
+## Performance Considerations
 
-* Uses JOIN instead of SELECT in LOOP
-* Single database call for efficiency
+* Single database call using JOIN
+* Efficient data handling
 * Suitable for medium to large datasets
 
 ---
 
-## 🔥 Key Highlights
+## Key Highlights
 
-* Real-world business use case
-* Clean modular code structure
-* Performance-optimized data retrieval
-* Visual and interactive reporting
-
----
-
-## ⚠️ Limitations
-
-* Requires SAP system access
-* Depends on availability of data in MARA, MARD tables
-* Authorization may be required for table access
+* Real-world inventory analysis use case
+* Performance-optimized design
+* Clean modular ABAP structure
+* Interactive and user-friendly interface
 
 ---
 
-## 🚀 Future Enhancements
+## Future Enhancements
 
-* Drill-down reports
+* Drill-down detailed reports
 * Graphical dashboards
-* Email report generation
-* Fiori-based UI
+* Email report automation
+* Fiori-based UI integration
 * Predictive inventory analysis
 
 ---
 
-## 👤 Author Information
+## Limitations
 
-* **Name:** Yash Sirola
-* **Roll Number:** 23053179
-* **Batch/Program:** B.Tech
-* **Submission Date:** April 2026
-
+* Requires SAP system access
+* Depends on available data in MARA/MARD tables
+* Authorization required for table access
 
 ---
 
-## 📚 References
+## References
 
 * SAP ABAP Documentation
 * ALV Grid Programming Guide
@@ -173,6 +199,6 @@ sap-abap-inventory-dashboard/
 
 ---
 
-## 📌 Note
+## Note
 
-This project is created for academic and learning purposes and demonstrates SAP ABAP reporting concepts and best practices.
+This project is developed for academic purposes and demonstrates practical implementation of SAP ABAP reporting concepts and best practices.
