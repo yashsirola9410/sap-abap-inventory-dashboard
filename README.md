@@ -1,5 +1,7 @@
 # SAP ABAP Custom ALV Report – Inventory Aging & Stock Insight
 
+This report helps identify stock risks and improves inventory decision-making.
+
 ## Project Overview
 
 This project is a comprehensive SAP ABAP ALV (ABAP List Viewer) report developed to analyze inventory stock across plants and storage locations. It follows industry best practices and demonstrates production-level ABAP design using optimized data retrieval and interactive reporting.
